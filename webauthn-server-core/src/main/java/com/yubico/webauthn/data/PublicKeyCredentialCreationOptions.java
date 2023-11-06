@@ -371,6 +371,10 @@ public class PublicKeyCredentialCreationOptions {
                 param -> {
                   try {
                     switch (param.getAlg()) {
+                      case Dil3:
+                        // We don't have Dilithium3 support in keyFactory. Therefore, we perform our
+                        // own encoding/deecoding.
+                        break;
                       case EdDSA:
                         KeyFactory.getInstance("EdDSA");
                         break;
@@ -401,6 +405,9 @@ public class PublicKeyCredentialCreationOptions {
 
                   try {
                     switch (param.getAlg()) {
+                      case Dil3:
+                        // Signature.getInstance("Dil3");
+                        break;
                       case EdDSA:
                         Signature.getInstance("EDDSA");
                         break;

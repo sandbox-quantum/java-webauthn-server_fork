@@ -31,6 +31,7 @@ import com.yubico.webauthn.data.AssertionExtensionInputs;
 import com.yubico.webauthn.data.AttestationConveyancePreference;
 import com.yubico.webauthn.data.AuthenticatorData;
 import com.yubico.webauthn.data.ByteArray;
+import com.yubico.webauthn.data.COSEAlgorithmIdentifier;
 import com.yubico.webauthn.data.CollectedClientData;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions.PublicKeyCredentialCreationOptionsBuilder;
@@ -61,6 +62,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.openquantumsafe.*;
 
 /**
  * Encapsulates the four basic Web Authentication operations - start/finish registration,
@@ -208,6 +210,7 @@ public class RelyingParty {
    * <p>The default is the following list, in order:
    *
    * <ol>
+   *   <li>{@link com.yubico.webauthn.data.PublicKeyCredentialParameters#Dil3 Dilithium3}
    *   <li>{@link com.yubico.webauthn.data.PublicKeyCredentialParameters#ES256 ES256}
    *   <li>{@link com.yubico.webauthn.data.PublicKeyCredentialParameters#EdDSA EdDSA}
    *   <li>{@link com.yubico.webauthn.data.PublicKeyCredentialParameters#ES256 ES384}
@@ -225,6 +228,7 @@ public class RelyingParty {
   private final List<PublicKeyCredentialParameters> preferredPubkeyParams =
       Collections.unmodifiableList(
           Arrays.asList(
+              PublicKeyCredentialParameters.Dil3,
               PublicKeyCredentialParameters.ES256,
               PublicKeyCredentialParameters.EdDSA,
               PublicKeyCredentialParameters.ES384,
@@ -415,6 +419,10 @@ public class RelyingParty {
                 param -> {
                   try {
                     switch (param.getAlg()) {
+                      case Dil3:
+                        // We don't have Dilithium3 support in keyFactory. Therefore, we perform our
+                        // own encoding/decoding later in the flow.
+                        break;
                       case EdDSA:
                         KeyFactory.getInstance("EdDSA");
                         break;
@@ -451,13 +459,15 @@ public class RelyingParty {
                     return false;
                   }
 
-                  try {
-                    Signature.getInstance(signatureAlgName);
-                  } catch (NoSuchAlgorithmException e) {
-                    log.warn(
-                        "Unsupported algorithm in RelyingParty.preferredPubkeyParams: {}. No Signature available; registrations with this key algorithm will fail. You may need to add a dependency and load a provider using java.security.Security.addProvider().",
-                        param.getAlg());
-                    return false;
+                  if (param.getAlg() != COSEAlgorithmIdentifier.Dil3) {
+                    try {
+                      Signature.getInstance(signatureAlgName);
+                    } catch (NoSuchAlgorithmException e) {
+                      log.warn(
+                          "Unsupported algorithm in RelyingParty.preferredPubkeyParams: {}. No Signature available; registrations with this key algorithm will fail. You may need to add a dependency and load a provider using java.security.Security.addProvider().",
+                          param.getAlg());
+                      return false;
+                    }
                   }
 
                   return true;

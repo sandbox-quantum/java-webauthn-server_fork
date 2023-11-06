@@ -59,6 +59,13 @@ public class PublicKeyCredentialParameters {
   }
 
   /**
+   * Algorithm {@link COSEAlgorithmIdentifier#Dil3} and type {@link
+   * PublicKeyCredentialType#PUBLIC_KEY}.
+   */
+  public static final PublicKeyCredentialParameters Dil3 =
+      builder().alg(COSEAlgorithmIdentifier.Dil3).build();
+
+  /**
    * Algorithm {@link COSEAlgorithmIdentifier#EdDSA} and type {@link
    * PublicKeyCredentialType#PUBLIC_KEY}.
    */

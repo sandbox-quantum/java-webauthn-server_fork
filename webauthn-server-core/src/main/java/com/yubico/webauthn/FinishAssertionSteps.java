@@ -27,6 +27,10 @@ package com.yubico.webauthn;
 import static com.yubico.internal.util.ExceptionUtil.assertTrue;
 
 import COSE.CoseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import com.yubico.internal.util.OptionalUtil;
 import com.yubico.webauthn.data.AuthenticatorAssertionResponse;
 import com.yubico.webauthn.data.ByteArray;
@@ -41,6 +45,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Value;
@@ -525,10 +530,100 @@ final class FinishAssertionSteps {
                       new IllegalArgumentException(
                           String.format("Failed to decode \"alg\" from COSE key: %s", cose)));
 
-      if (!Crypto.verifySignature(key, signedBytes(), response.getResponse().getSignature(), alg)) {
-        throw new IllegalArgumentException("Invalid assertion signature.");
+      if (alg == COSEAlgorithmIdentifier.Dil3) {
+        log.debug("DIL3 ver");
+        ByteArray signerPubKey = cose;
+        String sig_name = "Dilithium3";
+        org.openquantumsafe.Signature verifier = new org.openquantumsafe.Signature(sig_name);
+        long t = System.currentTimeMillis();
+
+        byte[] dil3_pub_key = null;
+        try {
+          // dil3_pub_key = get_dil3_pk_from__cbor(signerPubKey.getBytes());
+          CBORFactory f = new CBORFactory();
+          ObjectMapper mapper = new ObjectMapper(f);
+          CBORParser parser = f.createParser(signerPubKey.getBytes());
+
+          Map<String, Object> pkobjectsmap =
+              mapper.readValue(parser, new TypeReference<Map<String, Object>>() {});
+
+          for (String ke : pkobjectsmap.keySet()) {
+            // System.out.println("key : " + key + ", Value : " + pkobjectsmap.get(key).toString());
+            switch (ke) {
+                // case "1":
+                //     kty = (int) pkobjectsmap.get(key);
+                //     break;
+                // case "3":
+                //     alg = (int) pkobjectsmap.get(key);
+                //     break;
+                // case "-1":
+                //     n = (byte[]) pkobjectsmap.get(key);
+                //     break;
+              case "-2":
+                dil3_pub_key = (byte[]) pkobjectsmap.get(ke);
+            }
+          }
+
+        } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+
+        log.debug("Dil3 pubkey after decoding len" + dil3_pub_key.length);
+
+        boolean is_valid =
+            verifier.verify(
+                signedBytes().getBytes(),
+                response.getResponse().getSignature().getBytes(),
+                dil3_pub_key);
+        System.out.println(
+            "It took " + (System.currentTimeMillis() - t) + " millisecs to verify the signature.");
+
+        System.out.println("\nValid signature? " + is_valid);
+        verifier.dispose_sig();
+
+        if (!is_valid) {
+          throw new IllegalArgumentException("Invalid assertion signature.");
+        }
+
+        // return is_valid;
+      } else {
+        if (!Crypto.verifySignature(
+            key, signedBytes(), response.getResponse().getSignature(), alg)) {
+          throw new IllegalArgumentException("Invalid assertion signature.");
+        }
       }
     }
+
+    // public byte[] get_dil3_pk_from__cbor(byte[] cbor) throws IOException
+    // {
+    //     CBORFactory f = new CBORFactory();
+    //     ObjectMapper mapper = new ObjectMapper(f);
+    //     CBORParser parser = f.createParser(cbor);
+
+    //     Map<String, Object> pkobjectsmap = mapper.readValue(parser, new TypeReference<Map<String,
+    // Object>>() {
+    //     });
+
+    //     for (String key : pkobjectsmap.keySet()) {
+    //         //System.out.println("key : " + key + ", Value : " +
+    // pkobjectsmap.get(key).toString());
+    //         switch (key) {
+    //             // case "1":
+    //             //     kty = (int) pkobjectsmap.get(key);
+    //             //     break;
+    //             // case "3":
+    //             //     alg = (int) pkobjectsmap.get(key);
+    //             //     break;
+    //             // case "-1":
+    //             //     n = (byte[]) pkobjectsmap.get(key);
+    //             //     break;
+    //             case "-2":
+    //                 return (byte[]) pkobjectsmap.get(key);
+    //         }
+    //     }
+    //     return null;
+    // }
 
     @Override
     public Step21 nextStep() {

@@ -133,6 +133,8 @@ final class WebAuthnCodecs {
       case 3:
         // COSE-JAVA supports RSA in v1.1.0 but not in v1.0.0
         return importCoseRsaPublicKey(cose);
+      case 5:
+        return null;
       default:
         throw new IllegalArgumentException("Unsupported key type: " + kty);
     }
@@ -177,6 +179,8 @@ final class WebAuthnCodecs {
 
   static String getJavaAlgorithmName(COSEAlgorithmIdentifier alg) {
     switch (alg) {
+      case Dil3:
+        return "Dil3";
       case EdDSA:
         return "EDDSA";
       case ES256:

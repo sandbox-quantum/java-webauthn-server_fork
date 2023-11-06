@@ -16,8 +16,13 @@ dependencies {
   api(platform(rootProject))
 
   implementation(project(":yubico-util"))
+  
+  implementation(files("../../liboqs-java/target/liboqs-java-with_dependencies.jar"))
+
   implementation("com.augustcellars.cose:cose-java")
   implementation("com.fasterxml.jackson.core:jackson-databind")
+  implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor")
+
   implementation("com.google.guava:guava")
   implementation("com.upokecenter:cbor")
   implementation("org.apache.httpcomponents.client5:httpclient5")

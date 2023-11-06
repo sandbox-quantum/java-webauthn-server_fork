@@ -25,7 +25,11 @@
 package com.yubico.webauthn;
 
 import COSE.CoseException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import com.upokecenter.cbor.CBORObject;
 import com.yubico.internal.util.CertificateParser;
 import com.yubico.internal.util.CollectionUtil;
@@ -46,6 +50,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -54,6 +59,7 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.openquantumsafe.*;
 
 @Slf4j
 final class PackedAttestationStatementVerifier
@@ -87,24 +93,6 @@ final class PackedAttestationStatementVerifier
   private boolean verifySelfAttestationSignature(
       AttestationObject attestationObject, ByteArray clientDataJsonHash) {
     final PublicKey pubkey;
-    try {
-      pubkey =
-          WebAuthnCodecs.importCosePublicKey(
-              attestationObject
-                  .getAuthenticatorData()
-                  .getAttestedCredentialData()
-                  .get()
-                  .getCredentialPublicKey());
-    } catch (IOException | CoseException | InvalidKeySpecException e) {
-      throw ExceptionUtil.wrapAndLog(
-          log,
-          String.format(
-              "Failed to parse public key from attestation data %s",
-              attestationObject.getAuthenticatorData().getAttestedCredentialData()),
-          e);
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    }
 
     final long keyAlgId =
         CBORObject.DecodeFromBytes(
@@ -149,7 +137,73 @@ final class PackedAttestationStatementVerifier
       throw ExceptionUtil.wrapAndLog(log, ".binaryValue() of \"sig\" failed", e);
     }
 
-    return Crypto.verifySignature(pubkey, signedData, signature, keyAlg);
+    if (sigAlgId == -20) {
+      ByteArray signerPubKey =
+          attestationObject
+              .getAuthenticatorData()
+              .getAttestedCredentialData()
+              .get()
+              .getCredentialPublicKey();
+      String sig_name = "Dilithium3";
+      org.openquantumsafe.Signature verifier = new org.openquantumsafe.Signature(sig_name);
+      long t = System.currentTimeMillis();
+
+      byte[] dil3_pub_key = null;
+      try {
+        dil3_pub_key = get_dil3_pk_from__cbor(signerPubKey.getBytes());
+      } catch (IOException e) {
+        // Auto-generated catch block
+        e.printStackTrace();
+      }
+
+      log.debug("Dilithium 3 pubkey len " + dil3_pub_key.length);
+
+      boolean is_valid = verifier.verify(signedData.getBytes(), signature.getBytes(), dil3_pub_key);
+      System.out.println(
+          "It took " + (System.currentTimeMillis() - t) + " millisecs to verify the signature.");
+
+      System.out.println("\nValid signature? " + is_valid);
+      verifier.dispose_sig();
+
+      return is_valid;
+    } else {
+      try {
+        pubkey =
+            WebAuthnCodecs.importCosePublicKey(
+                attestationObject
+                    .getAuthenticatorData()
+                    .getAttestedCredentialData()
+                    .get()
+                    .getCredentialPublicKey());
+      } catch (IOException | CoseException | InvalidKeySpecException e) {
+        throw ExceptionUtil.wrapAndLog(
+            log,
+            String.format(
+                "Failed to parse public key from attestation data %s",
+                attestationObject.getAuthenticatorData().getAttestedCredentialData()),
+            e);
+      } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+      }
+
+      return Crypto.verifySignature(pubkey, signedData, signature, keyAlg);
+    }
+  }
+
+  public byte[] get_dil3_pk_from__cbor(byte[] cbor) throws IOException {
+    CBORFactory f = new CBORFactory();
+    ObjectMapper mapper = new ObjectMapper(f);
+    CBORParser parser = f.createParser(cbor);
+    Map<String, Object> pkobjectsmap =
+        mapper.readValue(parser, new TypeReference<Map<String, Object>>() {});
+
+    for (String key : pkobjectsmap.keySet()) {
+      switch (key) {
+        case "-2":
+          return (byte[]) pkobjectsmap.get(key);
+      }
+    }
+    return null;
   }
 
   private boolean verifyX5cSignature(
