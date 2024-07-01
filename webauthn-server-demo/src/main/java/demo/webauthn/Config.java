@@ -39,16 +39,19 @@ public class Config {
   private static final Logger logger = LoggerFactory.getLogger(Config.class);
 
   private static final String DEFAULT_ORIGIN = "https://localhost:8443";
+  private static final String DEFAULT_HOST = "127.0.0.1";
   private static final int DEFAULT_PORT = 8443;
   private static final RelyingPartyIdentity DEFAULT_RP_ID =
       RelyingPartyIdentity.builder().id("localhost").name("Yubico WebAuthn demo").build();
 
   private final Set<String> origins;
   private final int port;
+  private final String host;
   private final RelyingPartyIdentity rpIdentity;
 
-  private Config(Set<String> origins, int port, RelyingPartyIdentity rpIdentity) {
+  private Config(Set<String> origins, String host, int port, RelyingPartyIdentity rpIdentity) {
     this.origins = CollectionUtil.immutableSet(origins);
+    this.host = host;
     this.port = port;
     this.rpIdentity = rpIdentity;
   }
@@ -58,7 +61,7 @@ public class Config {
   private static Config getInstance() {
     if (instance == null) {
       try {
-        instance = new Config(computeOrigins(), computePort(), computeRpIdentity());
+        instance = new Config(computeOrigins(), computeHost(), computePort(), computeRpIdentity());
       } catch (MalformedURLException e) {
         throw new RuntimeException(e);
       }
@@ -68,6 +71,10 @@ public class Config {
 
   public static Set<String> getOrigins() {
     return getInstance().origins;
+  }
+
+  public static String getHost() {
+    return getInstance().host;
   }
 
   public static int getPort() {
@@ -85,8 +92,6 @@ public class Config {
   private static Set<String> computeOrigins() {
     final String origins = System.getenv("YUBICO_WEBAUTHN_ALLOWED_ORIGINS");
 
-    logger.debug("YUBICO_WEBAUTHN_ALLOWED_ORIGINS: {}", origins);
-
     final Set<String> result;
 
     if (origins == null) {
@@ -95,19 +100,29 @@ public class Config {
       result = new HashSet<>(Arrays.asList(origins.split(",")));
     }
 
-    logger.info("Origins: {}", result);
+    logger.info("Allowed origins: {}", result);
 
     return result;
   }
 
-  private static int computePort() {
-    final String port = System.getenv("YUBICO_WEBAUTHN_PORT");
-
-    if (port == null) {
-      return DEFAULT_PORT;
-    } else {
-      return Integer.parseInt(port);
+  private static String computeHost() {
+    String server_host = System.getenv("YUBICO_WEBAUTHN_HOST");
+    if(server_host == null || server_host.trim() == "") {
+      // If the env var isn't set, default to localhost
+      server_host = DEFAULT_HOST;
     }
+    logger.info("Host: {}", server_host);
+    return server_host;
+  }
+
+  private static int computePort() {
+    final String port_str = System.getenv("YUBICO_WEBAUTHN_PORT");
+    int port = DEFAULT_PORT;
+    if (port_str != null) {
+      port = Integer.parseInt(port_str);
+    }
+    logger.info("Port: {}", port);
+    return port;
   }
 
   private static RelyingPartyIdentity computeRpIdentity() throws MalformedURLException {

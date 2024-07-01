@@ -3,7 +3,10 @@ FROM alpine:3
 ARG liboqs_sha=5dd87dcaafa6f90e983ef464f9f6a75f9485fb26
 ARG liboqs_java_sha=9088d7abc1176dab8936430fd7463dc824292165
 
-# EXPOSE 8443
+ENV YUBICO_WEBAUTHN_HOST="0.0.0.0"
+# ENV YUBICO_WEBAUTHN_ALLOWED_ORIGINS="https://*:8443"
+
+EXPOSE 8443
 
 RUN \
     apk update && \
@@ -40,8 +43,7 @@ COPY . /java-webauthn-server
 RUN \
     # Build java-webauthn-server
     cd /java-webauthn-server && \
-    ./gradlew :webauthn-server-core:jar && \
-    chmod +x ./docker-run.sh
+    ./gradlew :webauthn-server-demo:jar
 
 WORKDIR /java-webauthn-server/
-CMD ["./docker-run.sh"]
+CMD ["./gradlew", "run"]

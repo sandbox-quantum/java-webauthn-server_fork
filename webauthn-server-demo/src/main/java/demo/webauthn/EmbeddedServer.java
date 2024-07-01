@@ -39,6 +39,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Standalone Java application launcher that runs the demo server with the API but no static
@@ -46,7 +48,10 @@ import org.glassfish.jersey.servlet.ServletContainer;
  */
 public class EmbeddedServer {
 
+  private static final Logger logger = LoggerFactory.getLogger(EmbeddedServer.class);
+
   public static void main(String[] args) throws Exception {
+    final String host = Config.getHost();
     final int port = Config.getPort();
 
     App app = new App();
@@ -71,8 +76,9 @@ public class EmbeddedServer {
             new SslConnectionFactory(ssl, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpsConfig));
 
+    connector.setHost(host);
     connector.setPort(port);
-    connector.setHost("127.0.0.1");
+    logger.info("Running ServerConnector on %s:%d".format(host, port));
 
     ServletHolder servlet = new ServletHolder(new ServletContainer(config));
     ServletContextHandler context = new ServletContextHandler(server, "/");
