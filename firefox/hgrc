@@ -1,0 +1,5 @@
+[paths]
+default = https://hg.mozilla.org/mozilla-unified
+
+[format]
+maxchainlen = 10000
