@@ -50,7 +50,7 @@ import java.security.Security;
 public class EmbeddedServer {
 
   public static void main(String[] args) throws Exception {
-    // Add BouncyCastleProvider for Dilithium3.
+    // Add BouncyCastleProvider for Dilithium3 and Falcon-512.
     // For compatibility with the demo, we force an
     // old version [1.72,1.77) so that the pre-standard
     // version is used.

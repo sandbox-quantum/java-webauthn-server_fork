@@ -375,6 +375,10 @@ public class PublicKeyCredentialCreationOptions {
                         KeyFactory.getInstance("DILITHIUM3");
                         break;
 
+                      case FALCON512:
+                        KeyFactory.getInstance("FALCON-512");
+                        break;
+
                       case EdDSA:
                         KeyFactory.getInstance("EdDSA");
                         break;
@@ -407,6 +411,10 @@ public class PublicKeyCredentialCreationOptions {
                     switch (param.getAlg()) {
                       case DILITHIUM3:
                         Signature.getInstance("DILITHIUM3");
+                        break;
+
+                      case FALCON512:
+                        Signature.getInstance("FALCON-512");
                         break;
 
                       case EdDSA:

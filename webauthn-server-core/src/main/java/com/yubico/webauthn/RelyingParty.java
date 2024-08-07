@@ -227,6 +227,7 @@ public class RelyingParty {
       Collections.unmodifiableList(
           Arrays.asList(
               PublicKeyCredentialParameters.DILITHIUM3,
+              PublicKeyCredentialParameters.FALCON512,
               PublicKeyCredentialParameters.ES256,
               PublicKeyCredentialParameters.EdDSA,
               PublicKeyCredentialParameters.ES384,
@@ -419,6 +420,10 @@ public class RelyingParty {
                     switch (param.getAlg()) {
                       case DILITHIUM3:
                         KeyFactory.getInstance("DILITHIUM3");
+                        break;
+
+                      case FALCON512:
+                        KeyFactory.getInstance("FALCON-512");
                         break;
 
                       case EdDSA:

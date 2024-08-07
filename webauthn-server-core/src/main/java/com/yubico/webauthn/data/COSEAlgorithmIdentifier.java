@@ -44,6 +44,7 @@ import lombok.NonNull;
  */
 public enum COSEAlgorithmIdentifier {
   DILITHIUM3(-20),
+  FALCON512(-21),
   EdDSA(-8),
   ES256(-7),
   ES384(-35),

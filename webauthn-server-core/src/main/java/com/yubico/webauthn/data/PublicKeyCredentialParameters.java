@@ -66,6 +66,13 @@ public class PublicKeyCredentialParameters {
       builder().alg(COSEAlgorithmIdentifier.DILITHIUM3).build();
 
   /**
+   * Algorithm {@link COSEAlgorithmIdentifier#FALCON512} and type {@link
+   * PublicKeyCredentialType#PUBLIC_KEY}.
+   */
+  public static final PublicKeyCredentialParameters FALCON512 =
+      builder().alg(COSEAlgorithmIdentifier.FALCON512).build();
+
+  /**
    * Algorithm {@link COSEAlgorithmIdentifier#EdDSA} and type {@link
    * PublicKeyCredentialType#PUBLIC_KEY}.
    */

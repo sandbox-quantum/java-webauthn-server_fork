@@ -32,6 +32,8 @@ import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.COSEAlgorithmIdentifier;
 import org.bouncycastle.pqc.crypto.crystals.dilithium.DilithiumParameters;
 import org.bouncycastle.pqc.crypto.crystals.dilithium.DilithiumPublicKeyParameters;
+import org.bouncycastle.pqc.crypto.falcon.FalconParameters;
+import org.bouncycastle.pqc.crypto.falcon.FalconPublicKeyParameters;
 import org.bouncycastle.pqc.jcajce.provider.util.KeyUtil;
 
 import java.io.IOException;
@@ -139,6 +141,8 @@ final class WebAuthnCodecs {
         return importCoseRsaPublicKey(cose);
       case 5:
         return importCoseDilithiumPublicKey(cose);
+      case 7:
+        return importCoseFalconPublicKey(cose);
       default:
         throw new IllegalArgumentException("Unsupported key type: " + kty);
     }
@@ -151,6 +155,15 @@ final class WebAuthnCodecs {
     // TODO: support more parameter sets
     byte[] encoded = KeyUtil.getEncodedSubjectPublicKeyInfo(new DilithiumPublicKeyParameters(DilithiumParameters.dilithium3, rawKey));
     return KeyFactory.getInstance("DILITHIUM").generatePublic(new X509EncodedKeySpec(encoded));
+  }
+
+  private static PublicKey importCoseFalconPublicKey(CBORObject cose)
+     throws NoSuchAlgorithmException, InvalidKeySpecException {
+    // first, get the raw key
+    byte[] rawKey = cose.get(CBORObject.FromObject(-2)).GetByteString();
+    // TODO: support more parameter sets
+    byte[] encoded = KeyUtil.getEncodedSubjectPublicKeyInfo(new FalconPublicKeyParameters(FalconParameters.falcon_512, rawKey));
+    return KeyFactory.getInstance("FALCON").generatePublic(new X509EncodedKeySpec(encoded));
   }
 
   private static PublicKey importCoseRsaPublicKey(CBORObject cose)
@@ -194,6 +207,8 @@ final class WebAuthnCodecs {
     switch (alg) {
       case DILITHIUM3:
         return "DILITHIUM3";
+      case FALCON512:
+        return "FALCON-512";
       case EdDSA:
         return "EDDSA";
       case ES256:
