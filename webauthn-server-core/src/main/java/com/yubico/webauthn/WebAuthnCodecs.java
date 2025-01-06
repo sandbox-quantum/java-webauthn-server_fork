@@ -147,7 +147,7 @@ final class WebAuthnCodecs {
   private static PublicKey importCoseDilithiumPublicKey(CBORObject cose)
      throws NoSuchAlgorithmException, InvalidKeySpecException {
     // first, get the raw key
-    byte[] rawKey = cose.get(CBORObject.FromObject(-2)).GetByteString();
+    byte[] rawKey = cose.get(CBORObject.FromObject(-1)).GetByteString();
     // TODO: support more parameter sets
     byte[] encoded = KeyUtil.getEncodedSubjectPublicKeyInfo(new DilithiumPublicKeyParameters(DilithiumParameters.dilithium3, rawKey));
     return KeyFactory.getInstance("DILITHIUM").generatePublic(new X509EncodedKeySpec(encoded));
