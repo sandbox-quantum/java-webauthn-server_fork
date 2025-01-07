@@ -43,7 +43,9 @@ import lombok.NonNull;
  *     Cryptographic Algorithm Identifier (typedef COSEAlgorithmIdentifier)</a>
  */
 public enum COSEAlgorithmIdentifier {
+  DILITHIUM2(-87),
   DILITHIUM3(-88),
+  DILITHIUM5(-89),
   EdDSA(-8),
   ES256(-7),
   ES384(-35),

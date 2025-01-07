@@ -146,10 +146,23 @@ final class WebAuthnCodecs {
 
   private static PublicKey importCoseDilithiumPublicKey(CBORObject cose)
      throws NoSuchAlgorithmException, InvalidKeySpecException {
-    // first, get the raw key
+    final int algId = cose.get(CBORObject.FromObject(3)).AsInt32();
     byte[] rawKey = cose.get(CBORObject.FromObject(-1)).GetByteString();
-    // TODO: support more parameter sets
-    byte[] encoded = KeyUtil.getEncodedSubjectPublicKeyInfo(new DilithiumPublicKeyParameters(DilithiumParameters.dilithium3, rawKey));
+    DilithiumParameters params;
+    switch (algId) {
+      case -87:
+        params = DilithiumParameters.dilithium2;
+	break;
+      case -88:
+        params = DilithiumParameters.dilithium3;
+	break;
+      case -89:
+        params = DilithiumParameters.dilithium5;
+	break;
+      default:
+        throw new IllegalArgumentException("Unsupported algorithm id: " + algId);
+    }
+    byte[] encoded = KeyUtil.getEncodedSubjectPublicKeyInfo(new DilithiumPublicKeyParameters(params, rawKey));
     return KeyFactory.getInstance("DILITHIUM").generatePublic(new X509EncodedKeySpec(encoded));
   }
 
@@ -192,8 +205,12 @@ final class WebAuthnCodecs {
 
   static String getJavaAlgorithmName(COSEAlgorithmIdentifier alg) {
     switch (alg) {
+      case DILITHIUM2:
+        return "DILITHIUM2";
       case DILITHIUM3:
         return "DILITHIUM3";
+      case DILITHIUM5:
+        return "DILITHIUM5";
       case EdDSA:
         return "EDDSA";
       case ES256:
